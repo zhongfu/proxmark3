@@ -171,6 +171,7 @@ const static vocabulary_t vocabulary[] = {
     { 0, "hf 14b wrbl" },
     { 1, "hf 14b view" },
     { 1, "hf 14b valid" },
+    { 0, "hf 14b cepas" },
     { 1, "hf 15 help" },
     { 1, "hf 15 list" },
     { 1, "hf 15 demod" },

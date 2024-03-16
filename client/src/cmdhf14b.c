@@ -18,6 +18,7 @@
 
 #include "cmdhf14b.h"
 #include <ctype.h>
+#include <time.h>
 #include "iso14b.h"
 #include "fileutils.h"
 #include "cmdparser.h"          // command_t
@@ -2642,6 +2643,119 @@ static int CmdHF14BView(const char *Cmd) {
     return PM3_SUCCESS;
 }
 
+static void fmtCepasJulianDate(int days, char *str, size_t maxsize) {
+    struct tm t = {
+        .tm_year = 95,
+        .tm_mon = 0,
+        .tm_mday = days + 1,
+        .tm_hour = 8
+    };
+    mktime(&t);
+    strftime(str, maxsize, "%Y-%m-%d", &t);
+}
+
+static int CmdHF14BCepas(const char *Cmd) {
+
+    CLIParserContext *ctx;
+    CLIParserInit(&ctx, "hf 14b cepas",
+                  "Prints info about a CEPAS card\n",
+                  "hf 14b cepas"
+                 );
+    void *argtable[] = {
+        arg_param_begin,
+        arg_lit0("v", "verbose", "verbose output"),
+        arg_lit0("r", "records", "transaction records"),
+        arg_param_end
+    };
+    CLIExecWithReturn(ctx, Cmd, argtable, true);
+    //bool verbose = arg_get_lit(ctx, 1);
+    bool records = arg_get_lit(ctx, 2);
+    CLIParserFree(ctx);
+
+    uint8_t data[PM3_CMD_DATA_SIZE] = {0x00};
+    int datalen = 0;
+
+    // TODO: not implemented yet
+    if (records) {
+        PrintAndLogEx(ERR, "--records not implemented yet");
+        return PM3_EINVARG;
+    } else {
+        /**
+         * you're supposed to select the master & elementary file first (00 a4 00 00 02 3f 00, 00 a4 00 00 02 40 00)
+         * but it seems like it's not really necessary, based on the cards i've tested
+         * so we can just send the unauth CEPAS read purse command (90 32 03 00 00 3f) -- purse id 0x03, Le 0x3f
+         */
+        uint8_t READ_PURSE_UNAUTH[6] = {0x90, 0x32, 0x03, 0x00, 0x00, 0x3f};
+        memcpy(data, READ_PURSE_UNAUTH, sizeof READ_PURSE_UNAUTH);
+        datalen = 6;
+    }
+
+    bool activate_field = 1;
+    bool leave_signal_on = 0;
+    int res = exchange_14b_apdu(data, datalen, activate_field, leave_signal_on, data, PM3_CMD_DATA_SIZE, &datalen, -1);
+    if (res != PM3_SUCCESS) {
+        return res;
+    }
+
+    if (datalen < 65) {
+        PrintAndLogEx(ERR, "Got a response that's too short (%d bytes)", datalen);
+        return PM3_ESOFT;
+    }
+
+    // TODO refactor all these into a separate func that returns a struct?
+
+    // get balance & autoload amount
+    // TODO: maybe we can refactor this?
+    uint32_t balance = MemBeToUint3byte(&data[2]); // pos 2-4
+    uint32_t balance_dollars = balance / 100; // hmm...
+    uint32_t balance_cents = balance % 100; // hmm......
+    uint32_t autoload = MemBeToUint3byte(&data[5]); // pos 5-7
+    uint32_t autoload_dollars = autoload / 100;
+    uint32_t autoload_cents = autoload % 100;
+
+    int expiryDays = MemBeToUint2byte(&data[24]); // pos 24-25
+    // yyyy-mm-dd = 10 chars, + null, + 1 extra i guess
+    char expiryDateStr[12];
+    fmtCepasJulianDate(expiryDays, &expiryDateStr[0], 12);
+
+    int creationDays = MemBeToUint2byte(&data[26]); // pos 26-27
+    char creationDateStr[12];
+    fmtCepasJulianDate(creationDays, &creationDateStr[0], 12);
+
+    // card type
+    char card_type[64] = {0};
+    if (data[8] == 0x10 && data[9] == 0x00) {
+        strncpy(card_type, "Adult CEPAS card", sizeof card_type - 1);
+    } else if (data[8] == 0x10 && data[9] == 0x09) {
+        strncpy(card_type, "Adult Co-Brand", sizeof card_type - 1);
+    } else if (data[8] == 0x11 && data[9] == 0x11) {
+        strncpy(card_type, "NETS FlashPay", sizeof card_type - 1);
+    } else if (data[8] == 0x80 && (data[9] == 0x00 || data[9] == 0x08 || data[9] == 0x09)) {
+        strncpy(card_type, "Concession", sizeof card_type - 1);
+    } else {
+        strncpy(card_type, "Unknown", sizeof card_type - 1);
+    }
+
+    PrintAndLogEx(NORMAL, "");
+    PrintAndLogEx(INFO, "--- " _CYAN_("Purse Information") " ---------------------------");
+    PrintAndLogEx(SUCCESS, " CEPAS version        : %d", data[0]);
+    PrintAndLogEx(SUCCESS, " Purse status         : %d", data[1]);
+    PrintAndLogEx(SUCCESS, " Purse balance        : $%d.%02d", balance_dollars, balance_cents);
+    PrintAndLogEx(SUCCESS, " AutoLoad amount      : $%d.%02d", autoload_dollars, autoload_cents);
+    PrintAndLogEx(SUCCESS, " CAN                  : " _GREEN_("%s") " (%s)", sprint_hex_inrow(&data[8], 8), card_type);
+    PrintAndLogEx(SUCCESS, " CSN                  : " _GREEN_("%s"), sprint_hex_inrow(&data[16], 8));
+    PrintAndLogEx(SUCCESS, " Purse expiry         : %s", expiryDateStr);
+    PrintAndLogEx(SUCCESS, " Purse creation       : %s", creationDateStr);
+    PrintAndLogEx(SUCCESS, " Last credit tx TRP   : %s", sprint_hex(&data[28], 4));
+    PrintAndLogEx(SUCCESS, " Last credit tx header: %s", sprint_hex(&data[32], 8));
+    PrintAndLogEx(SUCCESS, " # records in tx log  : %d", data[40]);
+    PrintAndLogEx(SUCCESS, " Last tx TRP          : %s", sprint_hex(&data[41], 4));
+    PrintAndLogEx(SUCCESS, " Last tx record       : %s", sprint_hex(&data[45], 16));
+    //PrintAndLogEx(SUCCESS, " Issuer-specific data:");
+
+    return PM3_SUCCESS;
+}
+
 static command_t CommandTable[] = {
     {"---------", CmdHelp,          AlwaysAvailable, "----------------------- " _CYAN_("General") " -----------------------"},
     {"help",      CmdHelp,          AlwaysAvailable, "This help"},
@@ -2660,6 +2774,7 @@ static command_t CommandTable[] = {
     {"wrbl",      CmdHF14BSriWrbl,  IfPm3Iso14443b,  "Write data to a SRI512/SRIX4 tag"},
     {"view",      CmdHF14BView,     AlwaysAvailable, "Display content from tag dump file"},
     {"valid",     CmdSRIX4kValid,   AlwaysAvailable, "SRIX4 checksum test"},
+    {"cepas",     CmdHF14BCepas,    IfPm3Iso14443b,  "CEPAS purse information"},
     {NULL, NULL, NULL, NULL}
 };
 

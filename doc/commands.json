@@ -1393,6 +1393,20 @@
             ],
             "usage": "hf 14b apdu [-hskte] [--decode] [-m <hex>] [-l <int>] -d <hex> [--timeout <dec>]"
         },
+        "hf 14b cepas": {
+            "command": "hf 14b cepas",
+            "description": "Prints info about a CEPAS card",
+            "notes": [
+                "hf 14b cepas"
+            ],
+            "offline": false,
+            "options": [
+                "-h, --help This help",
+                "-v, --verbose verbose output",
+                "-r, --records transaction records"
+            ],
+            "usage": "hf 14b cepas [-hvr]"
+        },
         "hf 14b dump": {
             "command": "hf 14b dump",
             "description": "This command dumps the contents of a ISO-14443-B tag and save it to file Tries to autodetect cardtype, memory size defaults to SRI4K",
@@ -3061,7 +3075,7 @@
         },
         "hf help": {
             "command": "hf help",
-            "description": "-------- ----------------------- High Frequency ----------------------- 14a { ISO14443A RFIDs... } 14b { ISO14443B RFIDs... } 15 { ISO15693 RFIDs... } cipurse { Cipurse transport Cards... } epa { German Identification Card... } emrtd { Machine Readable Travel Document... } felica { ISO18092 / FeliCa RFIDs... } fido { FIDO and FIDO2 authenticators... } fudan { Fudan RFIDs... } gallagher { Gallagher DESFire RFIDs... } iclass { ICLASS RFIDs... } ict { ICT MFC/DESfire RFIDs... } jooki { Jooki RFIDs... } ksx6924 { KS X 6924 (T-Money, Snapper+) RFIDs } legic { LEGIC RFIDs... } lto { LTO Cartridge Memory RFIDs... } mf { MIFARE RFIDs... } mfp { MIFARE Plus RFIDs... } mfu { MIFARE Ultralight RFIDs... } mfdes { MIFARE Desfire RFIDs... } ntag424 { NXP NTAG 4242 DNA RFIDs... } seos { SEOS RFIDs... } st25ta { ST25TA RFIDs... } tesla { TESLA Cards... } texkom { Texkom RFIDs... } thinfilm { Thinfilm RFIDs... } topaz { TOPAZ (NFC Type 1) RFIDs... } vas { Apple Value Added Service } waveshare { Waveshare NFC ePaper... } xerox { Fuji/Xerox cartridge RFIDs... } ----------- --------------------- General --------------------- help This help list List protocol data in trace buffer search Search for known HF tags --------------------------------------------------------------------------------------- hf list available offline: yes Alias of `trace list -t raw` with selected protocol data to annotate trace buffer You can load a trace from file (see `trace load -h`) or it be downloaded from device by default It accepts all other arguments of `trace list`. Note that some might not be relevant for this specific protocol",
+            "description": "-------- ----------------------- High Frequency ----------------------- 14a { ISO14443A RFIDs... } 14b { ISO14443B RFIDs... } 15 { ISO15693 RFIDs... } cipurse { Cipurse transport Cards... } epa { German Identification Card... } emrtd { Machine Readable Travel Document... } felica { ISO18092 / FeliCa RFIDs... } fido { FIDO and FIDO2 authenticators... } fudan { Fudan RFIDs... } gallagher { Gallagher DESFire RFIDs... } iclass { ICLASS RFIDs... } ict { ICT MFC/DESfire RFIDs... } jooki { Jooki RFIDs... } ksx6924 { KS X 6924 (T-Money, Snapper+) RFIDs } legic { LEGIC RFIDs... } lto { LTO Cartridge Memory RFIDs... } mf { MIFARE RFIDs... } mfp { MIFARE Plus RFIDs... } mfu { MIFARE Ultralight RFIDs... } mfdes { MIFARE Desfire RFIDs... } ntag424 { NXP NTAG 4242 DNA RFIDs... } seos { SEOS RFIDs... } st25ta { ST25TA RFIDs... } tesla { TESLA Cards... } texkom { Texkom RFIDs... } thinfilm { Thinfilm RFIDs... } topaz { TOPAZ (NFC Type 1) RFIDs... } vas { Apple Value Added Service } xerox { Fuji/Xerox cartridge RFIDs... } ----------- --------------------- General --------------------- help This help list List protocol data in trace buffer search Search for known HF tags --------------------------------------------------------------------------------------- hf list available offline: yes Alias of `trace list -t raw` with selected protocol data to annotate trace buffer You can load a trace from file (see `trace load -h`) or it be downloaded from device by default It accepts all other arguments of `trace list`. Note that some might not be relevant for this specific protocol",
             "notes": [
                 "hf list --frame -> show frame delay times",
                 "hf list -1 -> use trace buffer"
@@ -12568,6 +12582,6 @@
     "metadata": {
         "commands_extracted": 725,
         "extracted_by": "PM3Help2JSON v1.00",
-        "extracted_on": "2024-03-14T10:14:29"
+        "extracted_on": "2024-03-16T10:20:12"
     }
 }
